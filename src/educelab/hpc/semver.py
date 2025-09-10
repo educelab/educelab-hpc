@@ -85,11 +85,17 @@ class Version:
         if isinstance(other, VersionRequirement):
             return other == self
 
+        # if other is None, not equal
+        if other is None:
+            return False
+
+        # if both are null, then they're equal
         if self.is_null() and other.is_null():
             return True
 
+        # if one is null and the other isn't, not equal
         if self.is_null() or other.is_null():
-            raise RuntimeError(f"Cannot compare {repr(self)} to {repr(other)}")
+            return False
 
         return self.major == other.major \
             and self.minor == other.minor \
@@ -106,6 +112,12 @@ class Version:
 
         # Not lt if eq
         if self.__eq__(other):
+            return False
+
+        # null is always less than versioned
+        if self.is_null():
+            return True
+        if other is None or other.is_null():
             return False
 
         # Compare version parts
@@ -128,8 +140,8 @@ class Version:
             return True
 
         # compare parts of pre-release
-        parts, parts_other = self.prerelease.split('.'), other.prerelease.split(
-            '.')
+        parts  = self.prerelease.split('.')
+        parts_other = other.prerelease.split('.')
         for a, b in zip(parts, parts_other):
             # if parts match, skip
             if a == b:
@@ -246,9 +258,9 @@ class VersionRequirement:
         if isinstance(other, VersionRequirement):
             raise RuntimeError(f"Cannot compare two VersionRequirements")
 
+        # None-type or Null version never meets a requirement
         if other is None or other.is_null():
-            raise RuntimeError(
-                f"Cannot compare {repr(other)} against {repr(self)}")
+            return False
 
         meets_req = True
         if self.min_requirement == '==':
