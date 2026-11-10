@@ -3,25 +3,23 @@ import shutil
 import subprocess as sp
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 from educelab.hpc.semver import VersionRequirement, get_version
 
 
-def application() -> Optional[str]:
-    for name in ('apptainer', 'singularity'):
+def application() -> str | None:
+    for name in ("apptainer", "singularity"):
         path = shutil.which(name)
         if path is not None:
             return name
     return None
 
 
-def find_container(root,
-                   name,
-                   version: Union[str,
-                   Tuple[str, str]] = None) -> List[Path]:
+def find_container(
+    root, name, version: str | tuple[str, str] | None = None
+) -> list[Path]:
     # TODO: Extensions other than .sif
-    containers = list(Path(root).rglob(f'{name}*.sif'))
+    containers = list(Path(root).rglob(f"{name}*.sif"))
 
     # Build the version filter
     version_filter = lambda x: True
@@ -45,7 +43,7 @@ def find_container(root,
     return [f[1] for f in filtered]
 
 
-def run(args: List[str], container, overlay=None, enable_nv=False):
+def run(args: list[str], container, overlay=None, enable_nv=False):
     """
     Run an apptainer/singularity container
     :param args: Arguments to pass to the container
@@ -57,17 +55,17 @@ def run(args: List[str], container, overlay=None, enable_nv=False):
     logger = logging.getLogger(__name__)
     app = application()
     if app is None:
-        raise RuntimeError('apptainer/singularity not detected!')
-    cmd = [app, 'run']
+        raise RuntimeError("apptainer/singularity not detected!")
+    cmd = [app, "run"]
     if enable_nv:
-        cmd.extend(['--nv'])
+        cmd.extend(["--nv"])
     if overlay is not None:
-        cmd.extend(['--overlay', str(overlay)])
+        cmd.extend(["--overlay", str(overlay)])
     cmd.append(str(container))
     cmd.extend(args)
-    logger.debug(f'running command: \'{" ".join(cmd)}\'')
+    logger.debug(f"running command: '{' '.join(cmd)}'")
     try:
         sp.run(cmd, check=True)
     except sp.SubprocessError as e:
-        logger.exception('singularity run failed', exc_info=e)
-        sys.exit(f'{e.args}')
+        logger.exception("singularity run failed", exc_info=e)
+        sys.exit(f"{e.args}")
