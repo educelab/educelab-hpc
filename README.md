@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Tests](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml/badge.svg)](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml)
 
-`educelab-hpc` is a Python library providing helper functions for working in HPC environments. It covers SLURM job submission, Lmod environment module loading, Apptainer/Singularity container execution, inheritable configuration profiles, HPC path resolution, semantic versioning, and performance utilities. It depends only on the Python standard library, plus `tomli` on Python < 3.11.
+`educelab-hpc` is a Python library providing helper functions for working in HPC environments. It covers SLURM job submission, Lmod environment module loading, Apptainer/Singularity container execution, inheritable configuration profiles, HPC path resolution, semantic versioning, and performance utilities. It requires Python 3.11 or newer and depends only on the standard library.
 
 ## Installation
 

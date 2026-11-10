@@ -12,12 +12,9 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
-from educelab.hpc.lmod import module
+import tomllib
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python < 3.11
-    import tomli as tomllib
+from educelab.hpc.lmod import module
 
 PROFILE_ENV_VAR = 'EL_PROFILE'
 
