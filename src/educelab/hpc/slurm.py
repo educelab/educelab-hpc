@@ -8,7 +8,7 @@ SLURM_JOB_ID = os.environ.get('SLURM_JOB_ID', None)
 SLURM_NODE_NAME = os.environ.get('SLURMD_NODENAME', None)
 
 def add_cwd_to_path():
-    """Adds the current working directory to PATH. Call at the beginning of
+    """Adds the current working directory to sys.path. Call at the beginning of
     Python Slurm scripts in order to find local modules: https://stackoverflow.com/a/39574373"""
     sys.path.append(os.getcwd())
 

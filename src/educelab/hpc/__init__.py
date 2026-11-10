@@ -1,4 +1,5 @@
 from .apptainer import run as apptainer_run
+from .profile import Profile, ProfileError, export_profile, load_profile
 from .env import PROJECT, PSCRATCH, SCRATCH
 from .lmod import module
 from .local import run
