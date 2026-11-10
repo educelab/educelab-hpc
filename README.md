@@ -77,7 +77,7 @@ apptainer_run(
 )
 ```
 
-`find_container()` searches `root` recursively and returns matches sorted by the version in their filenames, oldest first, so the newest is `[-1]`. `apptainer_run()` raises `RuntimeError` if neither runtime is installed, and logs the error and exits the process if the container fails.
+`find_container()` searches `root` recursively and returns matches sorted by the version in their filenames, oldest first, so the newest is `[-1]`. Files without a version in their name sort before all versioned ones, and are left out when `version` is given. `apptainer_run()` raises `RuntimeError` if neither runtime is installed. If the container fails, it logs the error and exits the process with the container's exit code.
 
 ### Profiles (`educelab.hpc.profile`)
 

@@ -23,6 +23,16 @@ class TestVersion(unittest.TestCase):
         self.assertEqual(Version("1.0.0"), Version("1.0.0"))
         self.assertNotEqual(Version("1.0.0"), Version("1.1.0"))
 
+    def test_version_eq_other_types(self):
+        self.assertNotEqual(Version("1.0.0"), "1.0.0")
+        self.assertNotEqual(Version(), 0)
+        self.assertNotIn(Version("1.0.0"), ["foo", None])
+
+    def test_version_hashable(self):
+        self.assertEqual(hash(Version("1.0.0+a")), hash(Version("1.0.0+b")))
+        self.assertEqual(hash(Version()), hash(Version(major=1)))
+        self.assertEqual(len({Version("1.0.0"), Version("1.0.0"), Version("2.0.0")}), 2)
+
     def test_version_lt(self):
         l = Version("1.0.0")
         h = Version("1.1.0")

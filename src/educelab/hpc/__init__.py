@@ -36,12 +36,10 @@ __all__ = [
 def singularity_run(*args, **kwargs):
     import warnings
 
-    warnings.simplefilter("always", DeprecationWarning)
     warnings.warn(
         "singularity_run is deprecated and will be removed "
         "in a future release. Use apptainer_run instead.",
         category=DeprecationWarning,
         stacklevel=2,
     )
-    warnings.simplefilter("default", DeprecationWarning)
     apptainer_run(*args, **kwargs)
