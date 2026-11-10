@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "educelab-hpc"
-version = "0.3.0"
+version = "0.3.1"
 description = "A Python module providing helper functions for working in HPC environments"
 readme = "README.md"
 authors = [{ name = "Seth Parker", email = "c.seth.parker@uky.edu" }]
