@@ -37,7 +37,8 @@ def find_container(
         ver = get_version(c.stem)
         if version_filter(ver):
             filtered.append((ver, c))
-    filtered = sorted(filtered, key=lambda x: x[0])
+    # Unversioned files sort first; the path breaks ties between equal versions
+    filtered = sorted(filtered, key=lambda x: (x[0] is not None, x[0], x[1]))
 
     # return as list of paths
     return [f[1] for f in filtered]
@@ -66,6 +67,9 @@ def run(args: list[str], container, overlay=None, enable_nv=False):
     logger.debug(f"running command: '{' '.join(cmd)}'")
     try:
         sp.run(cmd, check=True)
+    except sp.CalledProcessError as e:
+        logger.exception("singularity run failed", exc_info=e)
+        sys.exit(e.returncode)
     except sp.SubprocessError as e:
         logger.exception("singularity run failed", exc_info=e)
         sys.exit(f"{e.args}")

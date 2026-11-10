@@ -94,9 +94,8 @@ class Version:
         if isinstance(other, VersionRequirement):
             return other == self
 
-        # if other is None, not equal
-        if other is None:
-            return False
+        if not isinstance(other, Version):
+            return NotImplemented
 
         # if both are null, then they're equal
         if self.is_null() and other.is_null():
@@ -115,6 +114,12 @@ class Version:
 
     def __ne__(self, other):
         return not self == other
+
+    def __hash__(self):
+        # Must agree with __eq__: build metadata is ignored, all nulls are equal
+        if self.is_null():
+            return hash(None)
+        return hash((self.major, self.minor, self.patch, self.prerelease))
 
     def __lt__(self, other):
         if isinstance(other, VersionRequirement):
