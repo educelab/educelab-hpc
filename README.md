@@ -112,7 +112,7 @@ inherits = ["ecc", "herc"]
 # ...ECC accounts and storage roots
 ```
 
-Tables merge key by key through inheritance. Other values, lists included, replace what they inherit. The required keys (`scratch_dir`, `project_dir`, `cpu_account`, `cpu_partition`) are checked only on the profile you load, after inheritance, so they can come from any profile in its chain.
+Tables merge key by key through inheritance. Other values, lists included, replace what they inherit. TOML has no null, so set a key to `""` to unset an inherited value (e.g. `gpu_partition = ""` for a CPU-only profile). A profile inherited along several paths is merged once, at its first position, so it never undoes a profile that already overrode it. In particular, listing an ancestor after its descendant (`inherits = ["b", "a"]` where `b` inherits `a`) leaves `b`'s values in place, as Python's method resolution order does. The required keys (`scratch_dir`, `project_dir`, `cpu_account`, `cpu_partition`) are checked only on the profile you load, after inheritance, so they can come from any profile in its chain.
 
 ```python
 from educelab.hpc import load_profile, export_profile, sbatch
@@ -126,9 +126,11 @@ profile = load_profile()
 profile.load_apptainer_modules()
 ```
 
-The profile is selected by an explicit name, then `$EL_PROFILE`, then the config's `active` key. Loading has no side effects. `export_profile()` is the one call that sets `$EL_PROFILE`, which `sbatch --export=ALL` (the default) forwards to the jobs you submit.
+The profile is selected by an explicit name, then `$EL_PROFILE`, then the config's `active` key. Loading has no side effects. `export_profile()` is the one call that sets `$EL_PROFILE`, which `sbatch --export=ALL` (the default) forwards to the jobs you submit. Only the name is forwarded: the job resolves it again, so it must pass the same `defaults=` as the submitter, and it reads the user config as it is when the job starts.
 
-Profiles are frozen and fully resolved, and `profile.lineage` records the profiles merged to build one (e.g. `('lcc', 'herc-lcc')`). Keys the library doesn't recognize are kept in the read-only `profile.extra` mapping (use `profile.extra_path(key, default)` for path-valued ones). `resolve_table(name)` returns a profile's merged raw values for inspection. Applications can keep their own top-level tables in the same file and read them with `load_config()`.
+Profiles are frozen and fully resolved, and `profile.lineage` records the profiles merged to build one (e.g. `('lcc', 'herc-lcc')`). Keys the library doesn't recognize are kept in the read-only `profile.extra` mapping (use `profile.extra_path(key, default)` for path-valued ones). `educelab.hpc.profile.resolve_table(name)` returns a profile's merged raw values for inspection. Applications can keep their own top-level tables in the same file and read them with `educelab.hpc.profile.load_config()`.
+
+Problems with the config raise `ProfileError` with a message naming the profile or file: a missing `defaults=` file, invalid TOML, a wrongly typed value, an inheritance cycle, or a path that uses an unset environment variable. An unset variable is an error because leaving `$PSCRATCH` unexpanded would silently produce a relative path.
 
 An application can ship its own default profiles. The user config is merged on top key by key *before* inheritance is resolved, so a user's profile can inherit a shipped one, and a user tweak to a shipped profile reaches every profile that inherits it:
 

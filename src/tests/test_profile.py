@@ -1,5 +1,6 @@
 import dataclasses
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -294,3 +295,100 @@ def test_export_profile_round_trips():
     hpc_profile.export_profile(load_profile('b', defaults=TWO))
     assert os.environ['EL_PROFILE'] == 'b'
     assert load_profile(defaults=TWO).name == 'b'
+
+
+# --- validation ---------------------------------------------------------------
+
+def test_unset_env_var_in_a_path_is_an_error(monkeypatch):
+    monkeypatch.delenv('EL_TEST_UNSET', raising=False)
+    with pytest.raises(ProfileError,
+                       match=r'"test" scratch_dir: .*\$EL_TEST_UNSET'):
+        profile_with(scratch_dir='$EL_TEST_UNSET/proj')
+    with pytest.raises(ProfileError, match=r'\$EL_TEST_UNSET'):
+        profile_with(project_dir='${EL_TEST_UNSET}/proj')
+
+
+def test_missing_defaults_file_is_an_error(tmp_path):
+    with pytest.raises(ProfileError, match='defaults file not found'):
+        load_profile('a', defaults=tmp_path / 'missing.toml')
+
+
+def test_invalid_toml_names_the_file(tmp_path):
+    path = write_user_config(tmp_path, '[profiles.a\n')
+    with pytest.raises(ProfileError, match=re.escape(f'Invalid TOML in {path}')):
+        load_profile('a')
+
+
+@pytest.mark.parametrize('config, match', [
+    ({'profiles': 'x'}, '"profiles" must be a table'),
+    ({'profiles': {'a': 'x'}}, 'Profile "a" must be a table'),
+    ({'profiles': {'a': {**BASE, 'inherits': 3}}}, 'inherits must be'),
+    ({'profiles': {'a': {**BASE, 'cpu_account': 12345}}},
+     'cpu_account must be a string, not int'),
+    ({'profiles': {'a': {**BASE, 'scratch_dir': 1}}}, 'scratch_dir must be'),
+    ({'profiles': {'a': {**BASE, 'apptainer_modules': [1]}}},
+     'apptainer_modules must be'),
+])
+def test_badly_shaped_config_is_a_profile_error(config, match):
+    with pytest.raises(ProfileError, match=match):
+        load_profile('a', defaults=config)
+
+
+def test_empty_string_unsets_an_inherited_key():
+    config = {'profiles': {'lcc': {**BASE, **LCC}, 'cpu-only': {
+        'inherits': 'lcc', 'gpu_partition': '', 'gpu_gres': ''}}}
+    p = load_profile('cpu-only', defaults=config)
+    assert not p.has_gpu
+    assert p.gpu_gres is None
+
+
+def test_empty_string_cannot_satisfy_a_required_key():
+    with pytest.raises(ProfileError, match='missing required keys: cpu_account'):
+        profile_with(cpu_account='')
+
+
+def test_an_ancestor_listed_after_its_descendant_does_not_override_it():
+    # Matches Python's MRO: b already overrides a, so listing a later is a no-op
+    config = {'profiles': {
+        'a': {**BASE, 'cpu_partition': 'from-a'},
+        'b': {'inherits': 'a', 'cpu_partition': 'from-b'},
+        'x': {'inherits': ['b', 'a']}}}
+    p = load_profile('x', defaults=config)
+    assert p.cpu_partition == 'from-b'
+    assert p.lineage == ('a', 'b', 'x')
+
+
+def test_deep_diamonds_resolve_without_rewalking():
+    # 30 layers of diamonds would take 2**30 visits without memoization
+    profiles = {'p0': BASE}
+    for i in range(1, 31):
+        profiles[f'l{i}'] = {'inherits': f'p{i - 1}'}
+        profiles[f'r{i}'] = {'inherits': f'p{i - 1}'}
+        profiles[f'p{i}'] = {'inherits': [f'l{i}', f'r{i}']}
+    assert len(load_profile('p30', defaults={'profiles': profiles}).lineage) == 91
+
+
+# --- isolation from inputs ------------------------------------------------------
+
+def test_nested_extra_values_are_read_only_and_detached():
+    defaults = {'profiles': {'a': {**BASE, 'env': {'X': '1'}, 'hosts': ['h1']}}}
+    p = load_profile('a', defaults=defaults)
+    with pytest.raises(TypeError):
+        p.extra['env']['X'] = '2'
+    assert p.extra['hosts'] == ('h1',)
+    resolve_table('a', defaults=defaults)['env']['X'] = '2'
+    assert defaults['profiles']['a']['env'] == {'X': '1'}
+
+
+def test_gpu_account_falls_back_for_directly_built_profiles():
+    p = hpc_profile.Profile(name='d', scratch_dir=Path('/s'),
+                            project_dir=Path('/p'), containers_dir=Path('/c'),
+                            cpu_account='acct', cpu_partition='part',
+                            gpu_partition='g')
+    assert p.gpu_account == 'acct'
+    assert p.sbatch_args(gpu=True)[:2] == ['-A', 'acct']
+
+
+def test_profile_error_is_exported():
+    from educelab.hpc import ProfileError as exported
+    assert exported is ProfileError
