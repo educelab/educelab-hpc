@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Tests](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml/badge.svg)](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml)
 
-`educelab-hpc` is a Python library providing helper functions for working in HPC environments. It covers SLURM job submission, Lmod environment module loading, Apptainer/Singularity container execution, HPC path resolution, semantic versioning, and performance utilities — all with no runtime dependencies beyond the Python standard library.
+`educelab-hpc` is a Python library providing helper functions for working in HPC environments. It covers SLURM job submission, Lmod environment module loading, Apptainer/Singularity container execution, inheritable configuration profiles, HPC path resolution, semantic versioning, and performance utilities — all with no runtime dependencies beyond the Python standard library (plus `tomli` on Python < 3.11).
 
 ## Installation
 
@@ -76,6 +76,64 @@ apptainer_run(
     overlay=Path('/path/to/overlay.img'),  # optional persistent overlay
     enable_nv=True,                        # enable NVIDIA GPU passthrough
 )
+```
+
+### Profiles (`educelab.hpc.profile`)
+
+Keep Slurm accounts, partitions, GPU resources, modules, and storage roots in named TOML profiles instead of code, so the same scripts run anywhere by switching profiles. A profile can inherit from other profiles and add or override keys:
+
+```toml
+# ~/.config/educelab-hpc/profiles.toml  (or $XDG_CONFIG_HOME/educelab-hpc/)
+active = "herc-lcc"
+
+[profiles.lcc]
+cpu_partition     = "CAL48M192_L"
+gpu_partition     = "V4V32_SKY32M192_L"      # optional; omit for CPU-only clusters
+gpu_gres          = "gpu:1"                  # optional
+apptainer_modules = ["ccs/singularity"]      # optional
+
+[profiles.herc-lcc]
+inherits          = "lcc"
+scratch_dir       = "$PSCRATCH/seales_uksr"  # ~ and env vars are expanded
+project_dir       = "$PROJECT/seales_uksr"
+cpu_account       = "col_seales_uksr"
+gpu_account       = "gol_seales_uksr"        # optional; defaults to cpu_account
+containers_dir    = "/shared/sif"            # optional; default <project_dir>/containers
+```
+
+`inherits` may also be a list. Parents apply in order (later ones win), and the profile's own keys win over all of them:
+
+```toml
+[profiles.herc]
+globus_endpoint = "herc-archive"
+
+[profiles.herc-ecc]
+inherits = ["ecc", "herc"]
+# ...ECC accounts and storage roots
+```
+
+Tables merge key by key through inheritance. Other values, lists included, replace what they inherit. The required keys (`scratch_dir`, `project_dir`, `cpu_account`, `cpu_partition`) are checked only on the profile you load, after inheritance, so they can come from any profile in its chain.
+
+```python
+from educelab.hpc import load_profile, export_profile, sbatch
+
+profile = load_profile()           # or load_profile('herc-ecc')
+export_profile(profile)            # queued jobs inherit this profile via $EL_PROFILE
+sbatch(profile.sbatch_args(gpu=True) + ['job.sh'])
+
+# Inside the job
+profile = load_profile()
+profile.load_apptainer_modules()
+```
+
+The profile is selected by an explicit name, then `$EL_PROFILE`, then the config's `active` key. Loading has no side effects. `export_profile()` is the one call that sets `$EL_PROFILE`, which `sbatch --export=ALL` (the default) forwards to the jobs you submit.
+
+Profiles are frozen and fully resolved, and `profile.lineage` records the profiles merged to build one (e.g. `('lcc', 'herc-lcc')`). Keys the library doesn't recognize are kept in the read-only `profile.extra` mapping (use `profile.extra_path(key, default)` for path-valued ones). `resolve_table(name)` returns a profile's merged raw values for inspection. Applications can keep their own top-level tables in the same file and read them with `load_config()`.
+
+An application can ship its own default profiles. The user config is merged on top key by key *before* inheritance is resolved, so a user's profile can inherit a shipped one, and a user tweak to a shipped profile reaches every profile that inherits it:
+
+```python
+profile = load_profile(defaults=Path(__file__).parent / 'profiles.toml')
 ```
 
 ### Environment Paths (`educelab.hpc.env`)
