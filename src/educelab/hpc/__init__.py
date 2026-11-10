@@ -1,3 +1,5 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from .apptainer import run as apptainer_run
 from .profile import Profile, ProfileError, export_profile, load_profile
 from .env import PROJECT, PSCRATCH, SCRATCH
@@ -5,6 +7,11 @@ from .lmod import module
 from .local import run
 from .perf import timedelta_str
 from .slurm import sbatch, SLURM_JOB_ID, SLURM_NODE_NAME
+
+try:
+    __version__ = version("educelab-hpc")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
 
 
 def singularity_run(*args, **kwargs):

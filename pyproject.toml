@@ -1,6 +1,54 @@
 [build-system]
-requires = [
-    "setuptools>=51",
-    "wheel"
-]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "educelab-hpc"
+version = "0.3.0"
+description = "A Python module providing helper functions for working in HPC environments"
+readme = "README.md"
+authors = [{ name = "Seth Parker", email = "c.seth.parker@uky.edu" }]
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/educelab/educelab-hpc"
+Repository = "https://github.com/educelab/educelab-hpc"
+Issues = "https://github.com/educelab/educelab-hpc/issues"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff~=0.17.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["educelab*"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib"]
+
+[tool.ruff]
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Comparisons raise RuntimeError, not TypeError; changing it would break callers
+"src/educelab/hpc/semver.py" = ["TRY004"]

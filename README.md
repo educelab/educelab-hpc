@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/educelab-hpc)](https://pypi.org/project/educelab-hpc/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/educelab-hpc)](https://pypi.org/project/educelab-hpc/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Tests](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml/badge.svg)](https://github.com/educelab/educelab-hpc/actions/workflows/test.yml)
+[![Tests](https://github.com/educelab/educelab-hpc/actions/workflows/tests.yml/badge.svg)](https://github.com/educelab/educelab-hpc/actions/workflows/tests.yml)
 
 `educelab-hpc` is a Python library providing helper functions for working in HPC environments. It covers SLURM job submission, Lmod environment module loading, Apptainer/Singularity container execution, inheritable configuration profiles, HPC path resolution, semantic versioning, and performance utilities. It requires Python 3.11 or newer and depends only on the standard library.
 
@@ -271,11 +271,23 @@ v = get_version('myapp-container-v1.2.3-alpha+meta.sif')
 
 ## Development
 
+Either pip or [uv](https://docs.astral.sh/uv/) can be used.
+
+With pip (25.1+):
 ```bash
 git clone https://github.com/educelab/educelab-hpc.git
 cd educelab-hpc
-pip install -e ".[dev]"
+python -m venv .venv
+source .venv/bin/activate
+pip install -e . --group dev
 pytest
+ruff check . && ruff format .
+```
+
+With uv:
+```bash
+uv run pytest
+uv run ruff check . && uv run ruff format .
 ```
 
 ## License
