@@ -23,7 +23,7 @@ Submit and manage SLURM batch jobs.
 from educelab.hpc import sbatch, SLURM_JOB_ID, SLURM_NODE_NAME
 
 # Submit a batch job; with --parsable (the default), stdout is the job ID
-job_id, stderr = sbatch(['my_job.sh', '--arg', 'value'])
+job_id, stderr = sbatch(["my_job.sh", "--arg", "value"])
 
 # Inside a running job: the job ID and node name, or None outside a job
 print(SLURM_JOB_ID, SLURM_NODE_NAME)
@@ -35,6 +35,7 @@ To make local modules importable from within a SLURM script:
 
 ```python
 from educelab.hpc.slurm import add_cwd_to_path
+
 add_cwd_to_path()
 ```
 
@@ -45,8 +46,8 @@ Load environment modules via the Lmod system.
 ```python
 from educelab.hpc import module
 
-module('load', 'ccs/singularity')
-module('load', 'cuda/11.8')
+module("load", "ccs/singularity")
+module("load", "cuda/11.8")
 ```
 
 The module executable is located via `$LMOD_CMD` when set, with a fallback to the LCC OpenHPC default path.
@@ -64,15 +65,15 @@ from pathlib import Path
 app = application()  # 'apptainer', 'singularity', or None
 
 # Find .sif files matching a name and optional version constraint
-containers = find_container('/path/to/sifs', 'myapp', version='>=1.0.0')
-containers = find_container('/path/to/sifs', 'myapp', version=('>=1.0.0', '<2.0.0'))
+containers = find_container("/path/to/sifs", "myapp", version=">=1.0.0")
+containers = find_container("/path/to/sifs", "myapp", version=(">=1.0.0", "<2.0.0"))
 
 # Run a container
 apptainer_run(
-    args=['python', 'script.py'],
-    container=Path('/path/to/myapp-1.2.0.sif'),
-    overlay=Path('/path/to/overlay.img'),  # optional persistent overlay
-    enable_nv=True,                        # enable NVIDIA GPU passthrough
+    args=["python", "script.py"],
+    container=Path("/path/to/myapp-1.2.0.sif"),
+    overlay=Path("/path/to/overlay.img"),  # optional persistent overlay
+    enable_nv=True,  # enable NVIDIA GPU passthrough
 )
 ```
 
@@ -106,18 +107,18 @@ gpu_account = "gol_myproject"
 # submit.py
 from educelab.hpc import export_profile, load_profile, sbatch
 
-profile = load_profile()             # the selected profile (see below)
-export_profile(profile)              # jobs submitted from here select it too
-sbatch(profile.sbatch_args(gpu=True) + ['job.py'])
+profile = load_profile()  # the selected profile (see below)
+export_profile(profile)  # jobs submitted from here select it too
+sbatch(profile.sbatch_args(gpu=True) + ["job.py"])
 ```
 
 ```python
 # job.py
 from educelab.hpc import apptainer_run, load_profile
 
-profile = load_profile()             # reads $EL_PROFILE, set by the submitter
+profile = load_profile()  # reads $EL_PROFILE, set by the submitter
 profile.load_apptainer_modules()
-apptainer_run(['--help'], container=profile.containers_dir / 'myapp-1.0.0.sif')
+apptainer_run(["--help"], container=profile.containers_dir / "myapp-1.0.0.sif")
 ```
 
 `export_profile()` sets `$EL_PROFILE`, which Slurm forwards to the job (`--export=ALL` is the default). Only the name is forwarded, so the job loads the profile again from the config as it is when the job starts.
@@ -185,7 +186,8 @@ An application can ship default profiles, as a TOML file or a dict. The user con
 from pathlib import Path
 from educelab.hpc import load_profile
 
-DEFAULTS = Path(__file__).parent / 'profiles.toml'
+DEFAULTS = Path(__file__).parent / "profiles.toml"
+
 
 def profile(name=None):
     return load_profile(name, defaults=DEFAULTS)
@@ -207,8 +209,8 @@ Access standard HPC directory environment variables as `pathlib.Path` objects.
 from educelab.hpc import PROJECT, PSCRATCH, SCRATCH
 
 if SCRATCH is None:
-    raise SystemExit('$SCRATCH is not set')
-output_dir = SCRATCH / 'my_job' / 'results'
+    raise SystemExit("$SCRATCH is not set")
+output_dir = SCRATCH / "my_job" / "results"
 output_dir.mkdir(parents=True, exist_ok=True)
 ```
 
@@ -221,7 +223,7 @@ Run shell commands as subprocesses with logging and automatic error handling.
 ```python
 from educelab.hpc import run
 
-run(['ffmpeg', '-i', 'input.mp4', 'output.mkv'])
+run(["ffmpeg", "-i", "input.mp4", "output.mkv"])
 ```
 
 Logs the command at DEBUG level and exits the process on failure.
@@ -248,24 +250,24 @@ Parse and compare semantic versions and version constraints. Useful for filterin
 from educelab.hpc.semver import Version, VersionRequirement, get_version
 
 # Parse versions
-v = Version('1.2.3-alpha+build')
+v = Version("1.2.3-alpha+build")
 v = Version(major=1, minor=2, patch=3)
 
 # Compare versions
-Version('1.1.0') > Version('1.0.0')  # True
+Version("1.1.0") > Version("1.0.0")  # True
 
 # Check version requirements
-req = VersionRequirement('>=1.0.0')
-Version('1.5.0') == req   # True
-Version('0.9.0') == req   # False
+req = VersionRequirement(">=1.0.0")
+Version("1.5.0") == req  # True
+Version("0.9.0") == req  # False
 
 # Version ranges (auto-ordered)
-req = VersionRequirement('>1.0.0', '<2.0.0')
-Version('1.5.0') == req   # True
-Version('2.0.1') == req   # False
+req = VersionRequirement(">1.0.0", "<2.0.0")
+Version("1.5.0") == req  # True
+Version("2.0.1") == req  # False
 
 # Extract version from an arbitrary string
-v = get_version('myapp-container-v1.2.3-alpha+meta.sif')
+v = get_version("myapp-container-v1.2.3-alpha+meta.sif")
 # Version(1, 2, 3, 'alpha', 'meta')
 ```
 
